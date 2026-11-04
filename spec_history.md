@@ -19,9 +19,10 @@ To be honest I did not iterate much on this, I was more concerned with getting y
 >
 > Please propose a plan and file structure before writing code. Keep the physics in small, separate functions that I can test by hand.
 
+Comment: the code was impressively complicated and I didn't have time to dig-in to all the details. So I gave a second prompt.
 
-## 2026-11-04: modifying plots (Claude Opus 5.5, Claude Code)
+## 2026-11-04: simplifying code (Claude Opus 5.5, Claude Code)
 
-> Figure 2 is a little bit hard to read... the text is to small. Looks like the background color is a bit wrong too. One of the tasks is to "make an honest plot"... this one has a y-range that does not start at zero, so arguably it is being dishonest about the savings.
+> I want to give this repository as an example for my first-year programming course. Right now, it seems a bit overwhelming and might encourage "black box" use of AI. Could we simplify it a bit, even if it means we lose some features?
 > 
-> figure 3 is also hard to read. the background is also not white. The plot bakground being grey and then having very small color coded points is probably what makes it difficult... maybe we could present this data in a different way?
+> Is this basically a shooting method problem, but in 2D? I think we should keep the time-stepping and sweeping aspects, but maybe ditch the other stuff. I bet we can get something that is 80% as good with a lot simpler code.

@@ -1,49 +1,64 @@
-"""The Hohmann-style reference transfer, solved in the full bicircular model.
+"""The Hohmann-style transfer, found with the shooting method.
 
-Starting guess: the two-body Hohmann from LEO to the lunar distance, with the
-Moon placed so that it arrives at apogee at the same time as the spacecraft:
-    phase = pi - n_M * TOF_hohmann  (~114 deg).
-
-At apogee the spacecraft moves tangent to the Moon's orbit, so sliding the
-phase mostly moves the Moon *along* the spacecraft's path, not across it. The
-miss distance is set by the apogee radius, i.e. by the departure Δv. So we fix
-the phase and root-find the departure Δv for a periselene of 100 km altitude.
+1. Pencil-and-paper guess: the two-body Hohmann transfer from LEO out to the
+   Moon's distance, with the Moon placed so it gets there when we do.
+2. That guess ignores the Moon's own gravity, so in the full model it misses
+   (or hits!) the Moon. We fix it by shooting: adjust the departure burn until
+   the closest approach is exactly 100 km, using bisection.
 """
-import math
-
 import numpy as np
-from scipy.optimize import brentq
 
-from physics import A_M, MU_E, N_M, R_LEO, R_LLO, hohmann_dv, hohmann_tof
-from simulate import signed_periselene_radius, simulate
+from moon import D_MOON, DAY, MU_EARTH, R_LEO, R_LLO, V_LEO, W_MOON, capture_dv, fly
+
+SUN_ANGLE = np.radians(25)
 
 
 def two_body_guess():
-    dv1, dv2 = hohmann_dv(MU_E, R_LEO, A_M)
-    tof = hohmann_tof(MU_E, R_LEO, A_M)
-    phase = math.pi - N_M * tof
-    return dv1, phase, tof
+    a = (R_LEO + D_MOON) / 2                              # transfer ellipse
+    dv = np.sqrt(MU_EARTH * (2 / R_LEO - 1 / a)) - V_LEO  # vis-viva at perigee
+    tof = np.pi * np.sqrt(a**3 / MU_EARTH)                # half an orbit
+    phase = np.pi - W_MOON * tof      # the Moon must be at 180 deg after `tof`
+    return dv, phase
 
 
-def solve_hohmann(sun_angle=0.0, sense=+1, half_width=0.03, n=31):
-    """Departure Δv giving a 100 km periselene on the first pass.
+def miss_distance(dv, phase):
+    """Closest approach to the Moon minus our 100 km target [km].
 
-    sense = +1 for a counter-clockwise (prograde) pass, -1 for retrograde.
-    Returns (dv_dep, phase, RunResult of the actual run, with Moon impacts on).
+    Negative means we passed too close (or crashed into the Moon).
     """
-    dv0, phase, _ = two_body_guess()
-    target = sense * R_LLO
+    result = fly(dv, phase, SUN_ANGLE, days=8)
+    return result["closest"][0] - R_LLO
 
-    def f(dv):
-        s, _ = signed_periselene_radius(dv, phase, sun_angle)
-        return s - target
 
-    dvs = np.linspace(dv0 - half_width, dv0 + half_width, n)
-    vals = np.array([f(d) for d in dvs])
-    for a, b, fa, fb in zip(dvs[:-1], dvs[1:], vals[:-1], vals[1:]):
-        if np.isfinite(fa) and np.isfinite(fb) and fa * fb < 0 and abs(fa - fb) < 50_000:
-            dv = brentq(f, a, b, xtol=1e-12)
-            res = simulate(dv, phase, sun_angle, stop_at_first_periselene=100_000.0,
-                           t_search=20 * 86400.0)
-            return dv, phase, res
-    raise RuntimeError("no bracket for the Hohmann periselene target")
+def shoot(phase, low, high, tol=1e-9):
+    """Bisection: find dv in [low, high] where miss_distance changes sign."""
+    assert miss_distance(low, phase) > 0 > miss_distance(high, phase), "bad bracket"
+    while high - low > tol:
+        mid = (low + high) / 2
+        if miss_distance(mid, phase) > 0:
+            low = mid
+        else:
+            high = mid
+    return low
+
+
+def solve():
+    """Returns (departure dv, phase, result of fly) for the Hohmann-style transfer."""
+    dv_guess, phase = two_body_guess()
+    # The guess runs into the Moon; 10 m/s less misses it by ~38,000 km.
+    dv = shoot(phase, dv_guess - 0.010, dv_guess)
+    return dv, phase, fly(dv, phase, SUN_ANGLE, days=8)
+
+
+if __name__ == "__main__":
+    dv_guess, phase = two_body_guess()
+    print(f"two-body guess:  dv = {dv_guess:.4f} km/s, phase = {np.degrees(phase):.1f} deg")
+    if miss_distance(dv_guess, phase) < -100:
+        print("  ...which crashes into the Moon (the Moon's gravity bends us in)")
+
+    dv, phase, result = solve()
+    dv_cap = capture_dv(result["energy"][0])
+    print(f"after shooting:  dv = {dv:.4f} km/s, "
+          f"miss = {result['closest'][0] - R_LLO:.3f} km")
+    print(f"capture burn:    {dv_cap:.4f} km/s")
+    print(f"total:           {dv + dv_cap:.4f} km/s in {result['t_closest'][0] / DAY:.2f} days")

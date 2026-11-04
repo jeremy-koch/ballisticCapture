@@ -7,8 +7,8 @@ __pycache__/
 # private notes
 instructions.md
 
-# raw scan logs (~16 MB); regenerate with scripts/run_scan.py
-results/*.csv
+# outputs of the old version (see the main branch)
+results/
 
 # LaTeX report (kept out of the repo)
 report/
