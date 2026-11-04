@@ -22,7 +22,7 @@ The ballistic route saves about 114 m/s, roughly 3% of the total. The catch is t
 
 ## How it works
 
-`moon.py` has all the physics. Every function is short enough to check by hand:
+`moon.py` has all the physics.
 
 - `moon_position`, `sun_position`: both move on circles.
 - `pull`: the acceleration from one body. Our frame sits on the Earth, so we subtract that body's pull on the Earth too.
@@ -31,15 +31,15 @@ The ballistic route saves about 114 m/s, roughly 3% of the total. The catch is t
 - `fly`: burn, then coast with RK4, and record the closest approach to the Moon.
 - `capture_dv`: the burn at 100 km above the Moon, using conservation of energy.
 
-`hohmann.py` finds the Hohmann-style transfer with the **shooting method**. The pencil-and-paper two-body answer ignores the Moon's gravity, so in the full model it crashes into the Moon. We fix the Moon's starting position and bisect on the departure Δv until we pass exactly 100 km above the surface. That's one unknown and one target: a classic shooting problem.
+`hohmann.py` finds the Hohmann-style transfer with the **shooting method**.
 
-`ballistic.py` finds the ballistic transfer by **brute force**. There are two knobs here (departure Δv and the Moon's starting angle), but no single target to aim at. We want *any* trajectory that arrives slowly, and among those, the cheapest. Worse, the problem is chaotic: nudge the departure Δv by 1 mm/s and the arrival can change completely, so bisection has nothing smooth to grab onto. So we fly all ~29,000 combinations, score each one, and keep the best.
+`ballistic.py` finds the ballistic transfer by **brute force**. There are two knobs here (departure Δv and the Moon's starting angle), but no single target to aim at. We want *any* trajectory that arrives slowly, and among those, the cheapest. We fly ~29,000 combinations, score each one, and keep the best.
 
 A few simplifications are worth knowing about:
 
 - We assume we burn at the closest approach to the Moon, and estimate that burn as if the closest approach were exactly 100 km up.
-- We fix the Sun's starting angle at 25°, and only search a narrow window of departure Δv. That window is where the Sun happens to bring us back to the Moon's distance. We found it with an earlier, much bigger search; widen it and see what happens.
-- The step size is 1% of the local orbital time scale. Try `step=0.02` in `fly`. The Hohmann answer barely moves, but the ballistic sweep reshuffles which runs win, and the best total shifts by a few m/s. That's the chaos again.
+- We fix the Sun's starting angle at 25°, and only search a narrow window of departure Δv. That window is where the Sun happens to bring us back to the Moon's distance.
+- The step size is 1% of the local orbital time scale.
 
 ## Running it
 
