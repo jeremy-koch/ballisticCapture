@@ -9,3 +9,6 @@ instructions.md
 
 # raw scan logs (~16 MB); regenerate with scripts/run_scan.py
 results/*.csv
+
+# LaTeX report (kept out of the repo)
+report/

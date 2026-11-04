@@ -1,11 +1,13 @@
-# Getting to the Moon: fast or cheap?
+# A cheaper way to get to the Moon
 
 We simulate two ways to get a spacecraft from low Earth orbit (200 km up) into a low orbit around the Moon (100 km up), and compare how much fuel each one needs. We measure fuel as **Δv**, the total change in velocity the engine has to supply.
 
 - **Hohmann-style transfer:** the textbook route. One burn sends the spacecraft out to the Moon's distance, and a second burn at the Moon slows it down enough to stay there.
-- **Ballistic transfer:** the scenic route. We throw the spacecraft about a million km out and let the Sun's gravity bend its path, so it drifts back and the Moon captures it almost gently.
+- **Ballistic transfer:** we go out of the way such that we gently drift into orbit around the Moon.
 
 The simulation includes the gravity of the Earth, Moon, and Sun, and uses `scipy.integrate.solve_ivp` to step the spacecraft forward in time.
+
+
 
 ## Results
 
